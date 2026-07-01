@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Workout Tracker</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800;900&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg:       #0c0c0c;
+      --fg:       #f5f5f5;
+      --card:     #161616;
+      --muted-fg: #888888;
+      --primary:  #e8351a;
+      --secondary:#1f1f1f;
+      --border:   rgba(255,255,255,0.08);
+      --radius:   12px;
+    }
+    html, body { background: var(--bg); color: var(--fg); font-family: 'Inter', sans-serif; min-height: 100vh; }
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
+
+    header { position: sticky; top: 0; z-index: 20; background: rgba(12,12,12,0.95); backdrop-filter: blur(8px); border-bottom: 1px solid var(--border); }
+    .header-inner { max-width: 512px; margin: 0 auto; padding: 16px 16px 0; display: flex; align-items: center; justify-content: space-between; }
+    .logo { display: flex; align-items: center; gap: 8px; }
+    .logo svg { color: var(--primary); flex-shrink: 0; }
+    .logo-text { font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-size: 1.1rem; letter-spacing: 0.12em; color: var(--fg); }
+
+    .header-right { display: flex; align-items: center; gap: 12px; }
+
+    /* rest selector */
+    .rest-selector { display: flex; align-items: center; gap: 6px; }
+    .rest-selector svg { color: var(--muted-fg); flex-shrink: 0; }
+    .rest-btns { display: flex; gap: 4px; }
+    .rest-dur-btn {
+      padding: 3px 8px; border-radius: 6px; border: none;
+      font-family: 'Barlow Condensed', sans-serif; font-weight: 800;
+      font-size: 0.78rem; letter-spacing: 0.05em; cursor: pointer;
+      background: var(--secondary); color: var(--muted-fg);
+      transition: background 0.15s, color 0.15s;
+    }
+    .rest-dur-btn:hover { color: var(--fg); }
+    .rest-dur-btn.active { background: var(--primary); color: #fff; }
+
+    .btn-reset { display: flex; align-items: center; gap: 4px; font-size: 0.72rem; color: var(--muted-fg); background: none; border: none; cursor: pointer; transition: color 0.2s; font-family: 'Inter', sans-serif; }
+    .btn-reset:hover { color: var(--primary); }
+
+    .tabs { max-width: 512px; margin: 0 auto; padding: 10px 16px 14px; display: flex; gap: 8px; }
+    .tab { flex: 1; padding: 8px 0; border-radius: 8px; border: none; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 0.85rem; letter-spacing: 0.18em; cursor: pointer; transition: background 0.2s, color 0.2s; background: var(--secondary); color: var(--muted-fg); }
+    .tab:hover { color: var(--fg); }
+    .tab.active { background: var(--primary); color: #fff; }
+
+    .hero { max-width: 512px; margin: 0 auto; padding: 24px 16px 12px; }
+    .hero-title-row { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
+    .hero-title { font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-size: 3rem; color: var(--primary); line-height: 1; }
+    .hero-chevron { color: var(--primary); opacity: 0.6; margin-top: 4px; }
+    .hero-tagline { font-family: 'Barlow Condensed', sans-serif; font-size: 0.78rem; color: var(--muted-fg); text-transform: uppercase; letter-spacing: 0.22em; margin-bottom: 16px; }
+
+    .progress-row { display: flex; align-items: center; gap: 12px; margin-bottom: 4px; }
+    .progress-track { flex: 1; height: 6px; border-radius: 999px; background: var(--secondary); overflow: hidden; }
+    .progress-fill { height: 100%; background: var(--primary); border-radius: 999px; transition: width 0.5s ease; }
+    .progress-label { font-size: 0.72rem; color: var(--muted-fg); font-variant-numeric: tabular-nums; width: 60px; text-align: right; }
+    .complete-msg { font-family: 'Barlow Condensed', sans-serif; font-size: 0.72rem; color: var(--primary); font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; margin-top: 4px; display: none; }
+    .complete-msg.visible { display: block; }
+
+    .exercise-list { max-width: 512px; margin: 0 auto; padding: 0 16px 120px; display: flex; flex-direction: column; gap: 12px; }
+
+    .ex-card { border-radius: var(--radius); border: 1px solid var(--border); background: var(--card); transition: border-color 0.3s, background 0.3s; }
+    .ex-card.done { border-color: rgba(232,53,26,0.4); background: rgba(232,53,26,0.05); }
+    .ex-header { padding: 16px 16px 10px; display: flex; align-items: flex-start; gap: 12px; }
+    .ex-num { font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-size: 1.5rem; line-height: 1; margin-top: 2px; color: rgba(255,255,255,0.15); font-variant-numeric: tabular-nums; flex-shrink: 0; transition: color 0.3s; }
+    .ex-card.done .ex-num { color: var(--primary); }
+    .ex-body { flex: 1; min-width: 0; }
+    .ex-name-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .ex-name { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 1.2rem; letter-spacing: 0.04em; line-height: 1.2; color: var(--fg); }
+    .ex-subtitle { font-size: 0.68rem; color: var(--muted-fg); background: var(--secondary); padding: 2px 8px; border-radius: 999px; }
+    .ex-meta { display: flex; align-items: center; gap: 12px; margin-top: 4px; }
+    .ex-reps { font-size: 0.72rem; font-weight: 600; color: var(--primary); font-variant-numeric: tabular-nums; }
+    .ex-targets { font-size: 0.72rem; color: var(--muted-fg); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .ex-check-icon { flex-shrink: 0; margin-top: 2px; color: var(--primary); display: none; }
+    .ex-card.done .ex-check-icon { display: block; }
+
+    .set-row { padding: 0 16px 16px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+    .set-btn { display: flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--secondary); color: var(--muted-fg); font-size: 0.72rem; font-weight: 500; font-family: 'Inter', sans-serif; cursor: pointer; transition: background 0.2s, border-color 0.2s, color 0.2s; }
+    .set-btn:hover { border-color: rgba(232,53,26,0.5); color: var(--fg); }
+    .set-btn.checked { background: var(--primary); border-color: var(--primary); color: #fff; }
+    .sets-left { font-size: 0.72rem; color: var(--muted-fg); margin-left: 4px; }
+
+    .rest-overlay { position: fixed; bottom: 24px; left: 0; right: 0; z-index: 50; display: flex; justify-content: center; padding: 0 16px; pointer-events: none; opacity: 0; transform: translateY(16px); transition: opacity 0.25s, transform 0.25s; }
+    .rest-overlay.visible { opacity: 1; transform: translateY(0); pointer-events: all; }
+    .rest-card { width: 100%; max-width: 512px; background: #1a1a1a; border: 1px solid var(--border); border-radius: 16px; box-shadow: 0 8px 40px rgba(0,0,0,0.7); padding: 16px; display: flex; align-items: center; gap: 16px; }
+    .rest-timer-wrap { position: relative; width: 64px; height: 64px; flex-shrink: 0; }
+    .rest-timer-wrap svg { transform: rotate(-90deg); width: 64px; height: 64px; }
+    .rest-ring-bg { fill: none; stroke: #222; stroke-width: 4; }
+    .rest-ring-fg { fill: none; stroke: var(--primary); stroke-width: 4; stroke-linecap: round; transition: stroke-dashoffset 1s linear; }
+    .rest-seconds { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-size: 1.3rem; color: var(--fg); font-variant-numeric: tabular-nums; }
+    .rest-info { flex: 1; min-width: 0; }
+    .rest-tag { display: flex; align-items: center; gap: 6px; margin-bottom: 2px; }
+    .rest-tag svg { color: var(--primary); }
+    .rest-tag-text { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 0.72rem; color: var(--primary); text-transform: uppercase; letter-spacing: 0.18em; }
+    .rest-exercise { font-size: 0.875rem; font-weight: 600; color: var(--fg); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .rest-sub { font-size: 0.72rem; color: var(--muted-fg); margin-top: 2px; }
+    .btn-dismiss { flex-shrink: 0; background: none; border: none; cursor: pointer; color: var(--muted-fg); padding: 8px; border-radius: 8px; transition: color 0.2s, background 0.2s; display: flex; align-items: center; }
+    .btn-dismiss:hover { color: var(--fg); background: var(--secondary); }
+    svg { display: inline-block; vertical-align: middle; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <div class="logo">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M6 5v14M18 5v14M2 9h4M18 9h4M2 15h4M18 15h4M6 9h12M6 15h12"/>
+      </svg>
+      <span class="logo-text">WORKOUT TRACKER</span>
+    </div>
+    <div class="header-right">
+      <!-- Rest duration selector -->
+      <div class="rest-selector">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+        </svg>
+        <div class="rest-btns" id="restDurBtns"></div>
+      </div>
+      <button class="btn-reset" onclick="resetDay()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/>
+        </svg>
+        Reset
+      </button>
+    </div>
+  </div>
+  <div class="tabs" id="tabs"></div>
+</header>
+
+<div class="hero">
+  <div class="hero-title-row">
+    <span class="hero-title" id="heroTitle">PULL</span>
+    <svg class="hero-chevron" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <path d="m9 18 6-6-6-6"/>
+    </svg>
+  </div>
+  <p class="hero-tagline" id="heroTagline">Slow, Controlled Tension</p>
+  <div class="progress-row">
+    <div class="progress-track"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+    <span class="progress-label" id="progressLabel">0/0 sets</span>
+  </div>
+  <p class="complete-msg" id="completeMsg">Workout complete!</p>
+</div>
+
+<div class="exercise-list" id="exerciseList"></div>
+
+<div class="rest-overlay" id="restOverlay">
+  <div class="rest-card">
+    <div class="rest-timer-wrap">
+      <svg viewBox="0 0 60 60">
+        <circle class="rest-ring-bg" cx="30" cy="30" r="26"/>
+        <circle class="rest-ring-fg" id="restRing" cx="30" cy="30" r="26"/>
+      </svg>
+      <div class="rest-seconds" id="restSeconds">30</div>
+    </div>
+    <div class="rest-info">
+      <div class="rest-tag">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+        </svg>
+        <span class="rest-tag-text">Rest</span>
+      </div>
+      <div class="rest-exercise" id="restLabel">Exercise — Set 1</div>
+      <div class="rest-sub" id="restSub">30s / 30s</div>
+    </div>
+    <button class="btn-dismiss" onclick="dismissRest()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+      </svg>
+    </button>
+  </div>
+</div>
+
+<script>
+  const workouts = [
+    {
+      id:"pull", label:"PULL", type:"PULL", tagline:"Slow, Controlled Tension",
+      exercises:[
+        {id:"p1",number:1,name:"Inverted Rows",      subtitle:null,sets:3,reps:"10–15",    targets:"Back, Biceps"},
+        {id:"p2",number:2,name:"Towel Rows",         subtitle:null,sets:3,reps:"10–15",    targets:"Back, Forearms"},
+        {id:"p3",number:3,name:"Superman Hold",      subtitle:null,sets:3,reps:"20–30 sec",targets:"Lower Back, Glutes"},
+        {id:"p4",number:4,name:"Reverse Snow Angels",subtitle:null,sets:3,reps:"15–20",    targets:"Rear Delts, Upper Back"},
+        {id:"p5",number:5,name:"Towel Curls",        subtitle:null,sets:3,reps:"10–12",    targets:"Biceps, Forearms"}
+      ]
+    },
+    {
+      id:"push", label:"PUSH", type:"PUSH", tagline:"Slow, Controlled Tension",
+      exercises:[
+        {id:"pu1",number:1,name:"Push-Ups",           subtitle:null,sets:4,reps:"10–20",  targets:"Chest, Shoulders, Triceps"},
+        {id:"pu2",number:2,name:"Incline Push-Ups",   subtitle:null,sets:3,reps:"10–20",  targets:"Lower Chest, Triceps"},
+        {id:"pu3",number:3,name:"Pike Push-Ups",      subtitle:null,sets:3,reps:"8–15",   targets:"Shoulders"},
+        {id:"pu4",number:4,name:"Diamond Push-Ups",   subtitle:null,sets:3,reps:"8–15",   targets:"Triceps, Inner Chest"},
+        {id:"pu5",number:5,name:"Plank Shoulder Taps",subtitle:null,sets:3,reps:"20 taps",targets:"Core, Shoulders"}
+      ]
+    },
+    {
+      id:"legs", label:"LEGS", type:"LEGS", tagline:"Slow, Controlled Tension",
+      exercises:[
+        {id:"l1",number:1,name:"Bodyweight Squats",subtitle:null,sets:4,reps:"15–20",       targets:"Quads, Glutes"},
+        {id:"l2",number:2,name:"Reverse Lunges",   subtitle:null,sets:3,reps:"10–15 per leg",targets:"Quads, Glutes, Balance"},
+        {id:"l3",number:3,name:"Glute Bridges",    subtitle:null,sets:3,reps:"15–20",        targets:"Glutes, Hamstrings"},
+        {id:"l4",number:4,name:"Cossack Squats",   subtitle:null,sets:3,reps:"8–12 per leg", targets:"Inner Thighs, Mobility"},
+        {id:"l5",number:5,name:"Calf Raises",      subtitle:null,sets:3,reps:"15–20",        targets:"Calves"},
+        {id:"l6",number:6,name:"Wall Sit",         subtitle:null,sets:3,reps:"30–60 sec",    targets:"Quads, Isometric"}
+      ]
+    }
+  ];
+
+  const REST_OPTIONS = [30, 60, 90];
+  let restDuration = 30;
+  let activeDay = "pull";
+  const setStates = {};
+  workouts.forEach(w => w.exercises.forEach(ex => { setStates[ex.id] = new Array(ex.sets).fill(false); }));
+
+  let restInterval = null;
+  let restSecs = 30;
+  const CIRC = 2 * Math.PI * 26;
+
+  renderRestDurBtns(); renderTabs(); renderDay();
+
+  function renderRestDurBtns() {
+    const c = document.getElementById("restDurBtns");
+    c.innerHTML = "";
+    REST_OPTIONS.forEach(dur => {
+      const b = document.createElement("button");
+      b.className = "rest-dur-btn" + (dur === restDuration ? " active" : "");
+      b.textContent = dur + "s";
+      b.onclick = () => selectRestDuration(dur);
+      c.appendChild(b);
+    });
+  }
+
+  function selectRestDuration(dur) {
+    restDuration = dur;
+    // if timer is active, cancel and reset
+    if (restInterval) {
+      clearInterval(restInterval);
+      restInterval = null;
+      document.getElementById("restOverlay").classList.remove("visible");
+    }
+    restSecs = dur;
+    renderRestDurBtns();
+    updateRestUI();
+  }
+
+  function renderTabs() {
+    const c = document.getElementById("tabs");
+    c.innerHTML = "";
+    workouts.forEach(w => {
+      const b = document.createElement("button");
+      b.className = "tab" + (w.id === activeDay ? " active" : "");
+      b.textContent = w.label;
+      b.onclick = () => { activeDay = w.id; renderTabs(); renderDay(); };
+      c.appendChild(b);
+    });
+  }
+
+  function renderDay() {
+    const day = workouts.find(w => w.id === activeDay);
+    document.getElementById("heroTitle").textContent = day.type;
+    document.getElementById("heroTagline").textContent = day.tagline;
+    updateProgress();
+    renderExercises();
+  }
+
+  function updateProgress() {
+    const day = workouts.find(w => w.id === activeDay);
+    const total = day.exercises.reduce((a,ex) => a + ex.sets, 0);
+    const done  = day.exercises.reduce((a,ex) => a + (setStates[ex.id]||[]).filter(Boolean).length, 0);
+    const pct   = total > 0 ? (done/total)*100 : 0;
+    document.getElementById("progressFill").style.width = pct + "%";
+    document.getElementById("progressLabel").textContent = done + "/" + total + " sets";
+    document.getElementById("completeMsg").classList.toggle("visible", pct === 100);
+  }
+
+  function renderExercises() {
+    const day = workouts.find(w => w.id === activeDay);
+    const container = document.getElementById("exerciseList");
+    container.innerHTML = "";
+    day.exercises.forEach(ex => {
+      const exSets = setStates[ex.id] || new Array(ex.sets).fill(false);
+      const doneCount = exSets.filter(Boolean).length;
+      const isComplete = doneCount === ex.sets;
+
+      const card = document.createElement("div");
+      card.className = "ex-card" + (isComplete ? " done" : "");
+
+      card.innerHTML = `
+        <div class="ex-header">
+          <span class="ex-num">${String(ex.number).padStart(2,"0")}</span>
+          <div class="ex-body">
+            <div class="ex-name-row">
+              <span class="ex-name">${ex.name}</span>
+              ${ex.subtitle ? `<span class="ex-subtitle">${ex.subtitle}</span>` : ""}
+            </div>
+            <div class="ex-meta">
+              <span class="ex-reps">${ex.sets} &times; ${ex.reps} reps</span>
+              <span class="ex-targets">${ex.targets}</span>
+            </div>
+          </div>
+          <div class="ex-check-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
+            </svg>
+          </div>
+        </div>
+        <div class="set-row" id="sets-${ex.id}"></div>
+      `;
+
+      const setRow = card.querySelector(".set-row");
+      exSets.forEach((checked, idx) => {
+        const btn = document.createElement("button");
+        btn.className = "set-btn" + (checked ? " checked" : "");
+        btn.innerHTML = (checked
+          ? `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>`
+          : `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/></svg>`
+        ) + `<span>Set ${idx+1}</span>`;
+        btn.onclick = () => toggleSet(ex.id, idx);
+        setRow.appendChild(btn);
+      });
+
+      if (doneCount > 0 && doneCount < ex.sets) {
+        const s = document.createElement("span");
+        s.className = "sets-left";
+        s.textContent = (ex.sets - doneCount) + " left";
+        setRow.appendChild(s);
+      }
+
+      container.appendChild(card);
+    });
+  }
+
+  function toggleSet(exId, idx) {
+    const day = workouts.find(w => w.id === activeDay);
+    const ex = day.exercises.find(e => e.id === exId);
+    if (!setStates[exId]) setStates[exId] = new Array(ex.sets).fill(false);
+    const wasChecked = setStates[exId][idx];
+    setStates[exId][idx] = !wasChecked;
+    if (!wasChecked) startRest(ex.name + " — Set " + (idx+1));
+    renderExercises();
+    updateProgress();
+  }
+
+  function resetDay() {
+    const day = workouts.find(w => w.id === activeDay);
+    day.exercises.forEach(ex => { setStates[ex.id] = new Array(ex.sets).fill(false); });
+    dismissRest(); renderExercises(); updateProgress();
+  }
+
+  function startRest(label) {
+    if (restInterval) clearInterval(restInterval);
+    restSecs = restDuration;
+    document.getElementById("restLabel").textContent = label;
+    updateRestUI();
+    document.getElementById("restOverlay").classList.add("visible");
+    restInterval = setInterval(() => {
+      restSecs--;
+      if (restSecs <= 0) {
+        clearInterval(restInterval); restInterval = null;
+        document.getElementById("restOverlay").classList.remove("visible");
+        restSecs = restDuration; return;
+      }
+      updateRestUI();
+    }, 1000);
+  }
+
+  function dismissRest() {
+    if (restInterval) clearInterval(restInterval);
+    restInterval = null; restSecs = restDuration;
+    document.getElementById("restOverlay").classList.remove("visible");
+    updateRestUI();
+  }
+
+  function updateRestUI() {
+    document.getElementById("restSeconds").textContent = restSecs;
+    document.getElementById("restSub").textContent = restSecs > 0 ? restSecs + "s / " + restDuration + "s" : "Go!";
+    const progress = ((restDuration - restSecs) / restDuration) * CIRC;
+    const ring = document.getElementById("restRing");
+    ring.setAttribute("stroke-dasharray", CIRC);
+    ring.setAttribute("stroke-dashoffset", CIRC - progress);
+  }
+</script>
+</body>
+</html>
